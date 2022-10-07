@@ -1,4 +1,4 @@
-﻿using Microsoft.ML.OnnxRuntime;
+using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -63,10 +63,15 @@ namespace NuGet_ArcFace_Embedder
                 () =>
                 {
                     var inputs = new List<NamedOnnxValue> { NamedOnnxValue.CreateFromTensor("data", ImageToTensor(img)) };
-                    using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = Session.Run(inputs);
+                    IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results;
+                    
+                    lock(locker)
+                    { results = Session.Run(inputs); }
+                    
                     return Normalize(results.First(v => v.Name == "fc1").AsEnumerable<float>().ToArray());
                 };
-            Task<float[]> new_task = Task<float[]>.Run(embeddings);
+            var new_task = new Task<float[]>(embeddings, TaskCreationOptions.LongRunning);
+            new_task = Task<float[]>.Run(embeddings);
 
             lock(locker)
             { CalculationsCollection[session_key] = new_task; }
