@@ -7,10 +7,10 @@ NuGet пакет выполнен в двух версиях: с использ�
 
 - Команда для установки пакета с lock():
 ```
-dotnet add package Kintobor_ARcFace_NuGet_Locks --version 1.0.0
+dotnet add package Kintobor_ARcFace_NuGet_Locks --version 1.0.1
 ```
 
 - Команда для установки пакета с SemaphoreSlim:
 ```
-dotnet add package Kintobor_ArcFace_NuGet_Semaphores --version 1.0.2
+dotnet add package Kintobor_ArcFace_NuGet_Semaphores --version 1.0.3
 ```
