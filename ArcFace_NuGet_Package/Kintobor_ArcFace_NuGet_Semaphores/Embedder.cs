@@ -63,10 +63,15 @@ namespace NuGet_ArcFace_Embedder
                 () =>
                 {
                     var inputs = new List<NamedOnnxValue> { NamedOnnxValue.CreateFromTensor("data", ImageToTensor(img)) };
+                    
+                    CalcSemaphore.WaitAsync();
                     using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = Session.Run(inputs);
+                    CalcSemaphore.Release();
+
                     return Normalize(results.First(v => v.Name == "fc1").AsEnumerable<float>().ToArray());
                 };
-            Task<float[]> new_task = Task<float[]>.Run(embeddings);
+            var new_task = new Task<float[]>(embeddings, TaskCreationOptions.LongRunning);
+            new_task = Task<float[]>.Run(embeddings);
 
             CalcSemaphore.WaitAsync();
             CalculationsCollection[session_key] = new_task;
