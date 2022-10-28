@@ -1,5 +1,5 @@
 # 409_inozemtsev
-=========================================РАБОТА 2=========================================  
+===============================РАБОТА 2===============================  
 Необходимо устновить arcfaceresnet100-8.onnx **в директорию ArcFace_WPF_App\WpfApp1\bin\Debug\net6.0-windows**
 https://github.com/onnx/models/blob/main/vision/body_analysis/arcface/model/arcfaceresnet100-8.onnx
 
@@ -9,7 +9,7 @@ NuGet\Install-Package Kintobor_ArcFace_NuGet_Locks -Version 1.0.3
 ```
 \
 \
-=========================================РАБОТА 1=========================================  
+===============================РАБОТА 1===============================  
 Необходимо устновить arcfaceresnet100-8.onnx в директорию ArcFace_Test
 https://github.com/onnx/models/blob/main/vision/body_analysis/arcface/model/arcfaceresnet100-8.onnx
 
