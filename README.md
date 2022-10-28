@@ -1,5 +1,5 @@
 # 409_inozemtsev
-===================================================РАБОТА 2===================================================
+____________________________________________РАБОТА 2____________________________________________
 Необходимо устновить arcfaceresnet100-8.onnx в директорию ArcFace_WPF_App\WpfApp1\bin\Debug\net6.0-windows
 https://github.com/onnx/models/blob/main/vision/body_analysis/arcface/model/arcfaceresnet100-8.onnx
 
