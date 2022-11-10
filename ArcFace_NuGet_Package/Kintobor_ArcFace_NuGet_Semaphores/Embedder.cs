@@ -2,6 +2,7 @@
 using Microsoft.ML.OnnxRuntime.Tensors;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -17,6 +18,17 @@ namespace NuGet_ArcFace_Embedder
         private SemaphoreSlim CalcSemaphore;
 
         //...................................PRIVATE METHODS
+        private void DownloadNetwork()
+        {
+            using (var client = new WebClient())
+            {
+                client.DownloadFile(
+                    new System.Uri("https://github.com/onnx/models/raw/main/vision/body_analysis/arcface/model/arcfaceresnet100-8.onnx"),
+                    "arcfaceresnet100-8.onnx"
+                );
+            }
+        }
+
         private float[] Normalize(float[] v) 
         {
             float len = (float)Math.Sqrt(v.Select(x => x*x).Sum());;
@@ -45,9 +57,13 @@ namespace NuGet_ArcFace_Embedder
 
             return t;
         }
+
         //...................................PUBLIC METHODS
         public Embedder()
         {
+            if (!File.Exists("arcfaceresnet100-8.onnx"))
+                DownloadNetwork();
+                
             this.Session = new InferenceSession("arcfaceresnet100-8.onnx");
             this.CalculationsCollection = new Dictionary<string, Task<float[]>>();
             this.CalcSemaphore = new SemaphoreSlim(1);

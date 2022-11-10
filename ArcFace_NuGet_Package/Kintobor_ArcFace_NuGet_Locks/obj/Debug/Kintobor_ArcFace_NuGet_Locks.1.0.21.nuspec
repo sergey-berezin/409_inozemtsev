@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Kintobor_ArcFace_NuGet_Locks</id>
+    <version>1.0.21</version>
+    <authors>Kintobor_ArcFace_NuGet_Locks</authors>
+    <description>Package Description</description>
+    <dependencies>
+      <group targetFramework="net6.0">
+        <dependency id="Flee" version="2.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.ML" version="1.7.1" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.ML.OnnxRuntime" version="1.12.1" exclude="Build,Analyzers" />
+        <dependency id="Newtonsoft.Json" version="13.0.1" exclude="Build,Analyzers" />
+        <dependency id="SixLabors.ImageSharp" version="2.1.3" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="C:\Users\User\Desktop\prog\C#\Sem7\ArcFace_NuGet_Package\Kintobor_ArcFace_NuGet_Locks\bin\Debug\net6.0\Kintobor_ArcFace_NuGet_Locks.dll" target="lib\net6.0\Kintobor_ArcFace_NuGet_Locks.dll" />
+  </files>
+</package>

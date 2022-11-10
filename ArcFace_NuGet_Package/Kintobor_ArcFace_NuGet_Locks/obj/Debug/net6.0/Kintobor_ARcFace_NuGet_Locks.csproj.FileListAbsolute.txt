@@ -1,0 +1,13 @@
+C:\Users\User\Desktop\prog\C#\Sem7\ArcFace_NuGet_Package\Kintobor_ArcFace_NuGet_Locks\obj\Debug\net6.0\Kintobor_ARcFace_NuGet_Locks.csproj.AssemblyReference.cache
+C:\Users\User\Desktop\prog\C#\Sem7\ArcFace_NuGet_Package\Kintobor_ArcFace_NuGet_Locks\obj\Debug\net6.0\Kintobor_ARcFace_NuGet_Locks.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Desktop\prog\C#\Sem7\ArcFace_NuGet_Package\Kintobor_ArcFace_NuGet_Locks\obj\Debug\net6.0\Kintobor_ARcFace_NuGet_Locks.AssemblyInfoInputs.cache
+C:\Users\User\Desktop\prog\C#\Sem7\ArcFace_NuGet_Package\Kintobor_ArcFace_NuGet_Locks\obj\Debug\net6.0\Kintobor_ARcFace_NuGet_Locks.AssemblyInfo.cs
+C:\Users\User\Desktop\prog\C#\Sem7\ArcFace_NuGet_Package\Kintobor_ArcFace_NuGet_Locks\obj\Debug\net6.0\Kintobor_ARcFace_NuGet_Locks.csproj.CoreCompileInputs.cache
+C:\Users\User\Desktop\prog\C#\Sem7\ArcFace_NuGet_Package\Kintobor_ArcFace_NuGet_Locks\bin\Debug\net6.0\onnxruntime_providers_shared.dll
+C:\Users\User\Desktop\prog\C#\Sem7\ArcFace_NuGet_Package\Kintobor_ArcFace_NuGet_Locks\bin\Debug\net6.0\Kintobor_ARcFace_NuGet_Locks.deps.json
+C:\Users\User\Desktop\prog\C#\Sem7\ArcFace_NuGet_Package\Kintobor_ArcFace_NuGet_Locks\bin\Debug\net6.0\Kintobor_ARcFace_NuGet_Locks.dll
+C:\Users\User\Desktop\prog\C#\Sem7\ArcFace_NuGet_Package\Kintobor_ArcFace_NuGet_Locks\bin\Debug\net6.0\Kintobor_ARcFace_NuGet_Locks.pdb
+C:\Users\User\Desktop\prog\C#\Sem7\ArcFace_NuGet_Package\Kintobor_ArcFace_NuGet_Locks\obj\Debug\net6.0\Kintobor_ARcFace_NuGet_Locks.dll
+C:\Users\User\Desktop\prog\C#\Sem7\ArcFace_NuGet_Package\Kintobor_ArcFace_NuGet_Locks\obj\Debug\net6.0\refint\Kintobor_ARcFace_NuGet_Locks.dll
+C:\Users\User\Desktop\prog\C#\Sem7\ArcFace_NuGet_Package\Kintobor_ArcFace_NuGet_Locks\obj\Debug\net6.0\Kintobor_ARcFace_NuGet_Locks.pdb
+C:\Users\User\Desktop\prog\C#\Sem7\ArcFace_NuGet_Package\Kintobor_ArcFace_NuGet_Locks\obj\Debug\net6.0\ref\Kintobor_ARcFace_NuGet_Locks.dll

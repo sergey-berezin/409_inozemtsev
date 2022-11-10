@@ -44,15 +44,20 @@ namespace NuGet_ArcFace_Functions
             CancellationTokensCollection[cancellation_token_key] = cancellation_token_source;
             CancellationTokensSemaphore.Release();
 
-            Func<float> embeddings =
+            var res = await Task<float>.Run(
                 () =>
                 {
                     float[] embeddings1 = embedder.GetEmbeddings(key1);
                     float[] embeddings2 = embedder.GetEmbeddings(key2);
+
+                    Thread.Sleep(3000);
+                    if (cancellation_token_source.Token.IsCancellationRequested)
+                    {
+                        throw new TaskCanceledException();
+                    }
                     return callback(embeddings1, embeddings2);
-                };
-            var res = Task<float>.Run(embeddings, cancellation_token_source.Token);
-            return res.Result;
+                }, cancellation_token_source.Token);
+            return res;
         }
         
         //...................................PUBLIC METHODS
