@@ -15,6 +15,7 @@ using System.Runtime.CompilerServices;
 
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using NuGet_ArcFace_Functions;
 
 namespace WpfApp1
@@ -129,13 +130,15 @@ namespace WpfApp1
     {
         public ViewModel ViewModel;
         Functions ArcFace_Functions;
-        string DistanceTokenKey;                    // Токен для отмены вычисления расстояния
-        string SimilarityTokenKey;                  // Токен для отмены вычисления сходства
+        private string DistanceTokenKey;                // Токен для отмены вычисления расстояния
+        private string SimilarityTokenKey;              // Токен для отмены вычисления сходства
+        private SemaphoreSlim Sem;
 
         public MainWindow()
         {
             ViewModel = new ViewModel();
             ArcFace_Functions = new Functions();
+            this.Sem = new SemaphoreSlim(1);
 
             InitializeComponent();
             this.DataContext = ViewModel;
@@ -212,6 +215,31 @@ namespace WpfApp1
             else return true;
         }
 
+        private List<Image<Rgb24>> GetEqualSizeImages(List<Image<Rgb24>> images)
+        {
+            var equal_size_images = new List<Image<Rgb24>>();
+            
+            foreach (Image<Rgb24> image in images)
+            {
+                var source_height = image.Height;
+                var source_width = image.Width;
+                if (source_height != source_width)
+                {
+                    var target_size = Math.Min(source_height, source_width);
+                    var clone = image.Clone(img => 
+                        img.Resize(source_width, source_height).Crop(new Rectangle((source_width - target_size)/2, 0, target_size, target_size)));
+                    equal_size_images.Add(clone);
+                }
+                else
+                    equal_size_images.Add(image);
+            }
+
+            foreach (Image<Rgb24> image in equal_size_images)
+                image.Mutate(img => img.Resize(112, 112));
+
+            return equal_size_images;
+        }
+
         //.........................Вычисление расстояния и сходства для выбранных изображений
         private async void Start_Calculations_Click(object sender, RoutedEventArgs e)
         {
@@ -228,18 +256,24 @@ namespace WpfApp1
                 ViewModel.ImagesChanged = false;
                 ViewModel.Cancellable = true;
 
-                face1 = SixLabors.ImageSharp.Image.Load<Rgb24>(ViewModel.Image1);
-                face2 = SixLabors.ImageSharp.Image.Load<Rgb24>(ViewModel.Image2);
+                var equal_size_faces = GetEqualSizeImages(new List<Image<Rgb24>> {
+                    SixLabors.ImageSharp.Image.Load<Rgb24>(ViewModel.Image1),
+                    SixLabors.ImageSharp.Image.Load<Rgb24>(ViewModel.Image2)
+                });
+                face1 = equal_size_faces[0];
+                face2 = equal_size_faces[1];
+                pbStatus.Value = 20;
 
                 var distance = ArcFace_Functions.AsyncDistance(face1, face2, DistanceTokenKey);
                 var similarity = ArcFace_Functions.AsyncSimilarity(face1, face2, SimilarityTokenKey);
 
-                pbStatus.Value = 0;
-
                 var ActiveTasks = new List<Task> { distance, similarity };
                 while (ActiveTasks.Count > 0)
                 {
+                    Sem.WaitAsync();
                     Task finished = await Task.WhenAny(ActiveTasks);
+                    Sem.Release();
+
                     if (finished.Status == TaskStatus.Canceled)
                     {
                         ActiveTasks.Clear();
@@ -247,18 +281,18 @@ namespace WpfApp1
                         ViewModel.Similarity = -1;
                         ViewModel.ImagesChanged = true;
                         pbStatus.Value = 0;
-                        System.Windows.MessageBox.Show("All calculations canceled");
+                        System.Windows.MessageBox.Show("All calculations canceled!");
                     }
                     else if (finished == distance)
                     {
                         if (finished.Status == TaskStatus.Canceled);
                         ViewModel.Distance = distance.Result;
-                        pbStatus.Value += 50;
+                        pbStatus.Value += 40;
                     }
                     else if (finished == similarity)
                     {
                         ViewModel.Similarity = similarity.Result;
-                        pbStatus.Value += 50;
+                        pbStatus.Value += 40;
                     }
                     else
                         System.Windows.MessageBox.Show("How is this even possible?!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);

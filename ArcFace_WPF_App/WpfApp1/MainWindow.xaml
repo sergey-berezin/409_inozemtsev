@@ -11,7 +11,7 @@
         <local:SimilarityConverter x:Key="SimConv"/>
         <DataTemplate x:Key="ListTemplate">
             <StackPanel>
-                <Image Source="{Binding Path}" Width="130" Height="auto"/>
+                <Image Source="{Binding Path}" Width="130"/>
                 <TextBlock Text="{Binding Path=Name}" Width ="130" TextWrapping="Wrap"/>
             </StackPanel>
         </DataTemplate>

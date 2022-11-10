@@ -43,7 +43,7 @@
           "dependencies": {
             "Kintobor_ArcFace_NuGet_Locks": {
               "target": "Package",
-              "version": "[1.0.3, )"
+              "version": "[1.0.5, )"
             },
             "Ookii.Dialogs.Wpf": {
               "target": "Package",

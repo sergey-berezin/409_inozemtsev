@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "ZiqGF2ha3ULb9Ui+KeTxwd0IO+eeVrkiCf19DujrGab441G65bEFsUDSnS6N2nFwJ6RuzgCn1OHAbe33YGVoeg==",
+  "dgSpecHash": "29NeV+HrqAFFeeOvFSbXps18MuqUHepAIwwsDvjaX1cMMEb/aQr98DOXYUQy+Fb+EaaF1QwxYucRT3EQu/A8ig==",
   "success": true,
   "projectFilePath": "C:\\Users\\User\\Desktop\\prog\\C#\\Sem7\\ArcFace_WPF_App\\WpfApp1\\WpfApp1.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\User\\.nuget\\packages\\flee\\2.0.0\\flee.2.0.0.nupkg.sha512",
-    "C:\\Users\\User\\.nuget\\packages\\kintobor_arcface_nuget_locks\\1.0.3\\kintobor_arcface_nuget_locks.1.0.3.nupkg.sha512",
+    "C:\\Users\\User\\.nuget\\packages\\kintobor_arcface_nuget_locks\\1.0.5\\kintobor_arcface_nuget_locks.1.0.5.nupkg.sha512",
     "C:\\Users\\User\\.nuget\\packages\\microsoft.ml\\1.7.1\\microsoft.ml.1.7.1.nupkg.sha512",
     "C:\\Users\\User\\.nuget\\packages\\microsoft.ml.cpumath\\1.7.1\\microsoft.ml.cpumath.1.7.1.nupkg.sha512",
     "C:\\Users\\User\\.nuget\\packages\\microsoft.ml.dataview\\1.7.1\\microsoft.ml.dataview.1.7.1.nupkg.sha512",
