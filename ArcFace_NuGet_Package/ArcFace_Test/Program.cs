@@ -1,4 +1,4 @@
-using SixLabors.ImageSharp;
+﻿using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
 using NuGet_ArcFace_Functions;
@@ -126,8 +126,8 @@ class Test
     //...................................АСИНХРОННЫЙ ТЕСТ С ОТМЕНОЙ ВЫЧИСЛЕНИЯ РАССТОЯНИЯ И СХОЖЕСТИ МЕЖДУ ОДНИМ И ТО ЖЕ ИЗОБРАЖЕНИЕМ
     static async Task<(float[,] distance, float[,] similarity)> AsyncCancelTest()
     {
-        float[,] d_res = new float[2, 2];
-        float[,] s_res = new float[2, 2];
+        float[,] d_res = new float[2, 2]{{-1, -1}, {-1, -1}};
+        float[,] s_res = new float[2, 2]{{-1, -1}, {-1, -1}};
         string same_faces_test_token1 = GenreateTokenKey();
         string same_faces_test_token2 = GenreateTokenKey();
 
@@ -135,72 +135,111 @@ class Test
         var test12 = functions.AsyncDistance(faces[0], faces[1], GenreateTokenKey());
         var test21 = functions.AsyncDistance(faces[1], faces[0], GenreateTokenKey());
         var test22 = functions.AsyncDistance(faces[1], faces[1], same_faces_test_token2);
+            
+        functions.Cancel(same_faces_test_token1);
+        functions.Cancel(same_faces_test_token2);
         
-        if (functions.Cancel(same_faces_test_token1))
-        {
-            d_res[0, 0] = -1;
-            Console.WriteLine("Distance Test[1,1] successfully cancelled!");
-        }
-        if (functions.Cancel(same_faces_test_token2))
-        {
-            d_res[1, 1] = -1;
-            Console.WriteLine("Distance Test[2,2] successfully cancelled!");
-        }
-
-        var ActiveTests = new List<Task> {test12, test21};
+        var ActiveTests = new List<Task> {test11, test12, test21, test22};
         while (ActiveTests.Count > 0)
         {
-            Task finished = await Task.WhenAny(ActiveTests);
-            if (finished == test12)
+            try
             {
-                d_res[0, 1] = test12.Result;
-                Console.WriteLine("Distance Test[1,2] finished!");
+                Task finished = await Task.WhenAny(ActiveTests);
+                if (finished == test11)
+                {
+                    d_res[0, 0] = test11.Result;
+                    Console.WriteLine("Distance Test[1,1] finished!");
+                }
+                else if (finished == test12)
+                {
+                    d_res[0, 1] = test12.Result;
+                    Console.WriteLine("Distance Test[1,2] finished!");
+                }
+                else if (finished == test21)
+                {
+                    d_res[1, 0] = test21.Result;
+                    Console.WriteLine("Distance Test[2,1] finished!");
+                }
+                else if (finished == test22)
+                {
+                    d_res[1, 1] = test22.Result;
+                    Console.WriteLine("Distance Test[2,2] finished!");
+                }
+                else
+                    Console.WriteLine("ERROR!");
+                ActiveTests.Remove(finished);
             }
-            else if (finished == test21)
+            catch (AggregateException ae)
             {
-                d_res[1, 0] = test21.Result;
-                Console.WriteLine("Distance Test[2,1] finished!");
+                foreach (Exception e in ae.InnerExceptions)
+                {
+                    if (e is TaskCanceledException)
+                    {
+                        TaskCanceledException ex = (TaskCanceledException)e;
+                        Console.WriteLine("Task was canceled\n");
+                        ActiveTests.Remove(ActiveTests.Find(x => x.Id.Equals(ex.Task.Id)));
+                    }  
+                    else
+                        Console.WriteLine(e.Message);
+                }
             }
-            else
-                Console.WriteLine("ERROR!");
-            ActiveTests.Remove(finished);
         }
-        
+            
         test11 = functions.AsyncSimilarity(faces[0], faces[0], same_faces_test_token1);
         test12 = functions.AsyncSimilarity(faces[0], faces[1], GenreateTokenKey());
         test21 = functions.AsyncSimilarity(faces[1], faces[0], GenreateTokenKey());
         test22 = functions.AsyncSimilarity(faces[1], faces[1], same_faces_test_token2);
 
         if (functions.Cancel(same_faces_test_token1))
-        {
-            s_res[0, 0] = -1;
-            Console.WriteLine("Similarity Test[1,1] successfully cancelled!");
-        }
+                Console.WriteLine("Distance Test[1,1] successfully cancelled!");
         if (functions.Cancel(same_faces_test_token2))
-        {
-            s_res[1, 1] = -1;
-            Console.WriteLine("Similarity Test[2,2] successfully cancelled!");
-        }
+                Console.WriteLine("Distance Test[2,2] successfully cancelled!");
 
-        ActiveTests = new List<Task> {test12, test21};
+        ActiveTests = new List<Task> {test11, test12, test21, test22};
         while (ActiveTests.Count > 0)
         {
-            Task finished = await Task.WhenAny(ActiveTests);
-            if (finished == test12)
+            try
             {
-                s_res[0, 1] = test12.Result;
-                Console.WriteLine("Similarity Test[1,2] finished!");
+                Task finished = await Task.WhenAny(ActiveTests);
+                if (finished == test11)
+                {
+                    s_res[0, 0] = test11.Result;
+                    Console.WriteLine("Similarity Test[1,1] finished!");
+                }
+                else if (finished == test12)
+                {
+                    s_res[0, 1] = test12.Result;
+                    Console.WriteLine("Similarity Test[1,2] finished!");
+                }
+                else if (finished == test21)
+                {
+                    s_res[1, 0] = test21.Result;
+                    Console.WriteLine("Similarity Test[2,1] finished!");
+                }
+                else if (finished == test22)
+                {
+                    s_res[1, 1] = test22.Result;
+                    Console.WriteLine("Similarity Test[2,2] finished!");
+                }
+                else
+                    Console.WriteLine("ERROR!");
+                ActiveTests.Remove(finished);
             }
-            else if (finished == test21)
+            catch (AggregateException ae)
             {
-                s_res[1, 0] = test21.Result;
-                Console.WriteLine("Similarity Test[2,1] finished!");
+                foreach (Exception e in ae.InnerExceptions)
+                {
+                    if (e is TaskCanceledException)
+                    {
+                        TaskCanceledException ex = (TaskCanceledException)e;
+                        Console.WriteLine("Task was canceled\n");
+                        ActiveTests.Remove(ActiveTests.Find(x => x.Id.Equals(ex.Task.Id)));
+                    }  
+                    else
+                        Console.WriteLine(e.Message);
+                }
             }
-            else
-                Console.WriteLine("ERROR!");
-            ActiveTests.Remove(finished);
         }
-
         return (d_res, s_res);
     }
 
@@ -235,7 +274,8 @@ class Test
 
     static async Task Main()
     {
-        LoadFaces("face1.png", "face2.png");
+        LoadFaces("C:\\Users\\User\\Desktop\\prog\\C#\\Sem7\\ArcFace_NuGet_Package\\ArcFace_Test\\face1.png", 
+                  "C:\\Users\\User\\Desktop\\prog\\C#\\Sem7\\ArcFace_NuGet_Package\\ArcFace_Test\\face2.png");
 
         Console.WriteLine("\n____________________SYNCHRONOUS SEPARATE OPERATIONS TEST START____________________\n");
         var sep_sync_results = SeparateSyncTest();
