@@ -1,6 +1,9 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -12,14 +15,48 @@ using System.Windows.Data;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Sqlite;
 
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using NuGet_ArcFace_Functions;
 
+
 namespace WpfApp1
 {
+    //_____________________________________________________ЭЛЕМЕНТЫ ПОСТОЯННОГО ХРАНИЛИЩА_____________________________________________________
+    public class Image
+    {
+        [Key]
+        public int ID { get; set; }
+        public string Name { get; set; }
+        public string Path { get; set; }
+        public string Hash { get; set; }
+        public byte[] Embedding { get; set; }
+
+        public static string GetHash(string image_path)
+        {
+            byte[] image_data = File.ReadAllBytes(image_path);
+            
+            using (var sha256 = SHA256.Create())
+            { return string.Concat(sha256.ComputeHash(image_data).Select(x => x.ToString("X2"))); }
+        }
+    }
+
+    public class DataBaseContext : DbContext
+    {
+        public DbSet<Image> Images { get; set; }
+
+        public DataBaseContext() { Database.EnsureCreated(); }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder o) => o.UseSqlite("Data Source=ImageEmbeddings.db");
+    }
+
     //________________________________ЭЛЕМЕНТ СПИСКА LISTBOX (АБСОЛЮТНЫЙ ПУТЬ К ФАЙЛУ, ЕГО НАЗВАНИЕ И ФОРМАТ)_________________________________
     public class ListItem
     {
@@ -44,10 +81,12 @@ namespace WpfApp1
         private string folder_path;
         private string img1;
         private string img2;
+        private Image img_from_storage;
         private float distance;
         private float similarity;
         private bool changed;
         private bool cancellable;
+        private bool selected;
 
         //.........................Абсолютный путь к каталогу с изображениями
         public string FolderPath
@@ -68,6 +107,13 @@ namespace WpfApp1
         {
             get { return img2; }
             set { img2 = value; OnPropertyChanged("Image2"); }
+        }
+
+        //.........................Изображение из хранилища, выбранное для удаления
+        public Image ImageFromStorage
+        {
+            get { return img_from_storage; }
+            set { img_from_storage = value; OnPropertyChanged("ImageFromStorage"); }
         }
 
         //.........................Значение расстояния для двух выбранных изображений
@@ -98,8 +144,18 @@ namespace WpfApp1
             set { cancellable = value; OnPropertyChanged("Cancellable"); }
         }
 
+        //.........................Подтверждение выбора изображения для удаления из хранилища (иначе нажать кнопку удаления будет невозможно)
+        public bool ImageSelected
+        {
+            get { return selected; }
+            set { selected = value; OnPropertyChanged("ImageSelected"); }
+        }
+
         //.........................Коллекция названий изображений из выбранного каталога и их абсолютных путей (для вывода через ListBox)
         public ObservableCollection<ListItem> Files { get; set; }
+
+        //.........................Коллекция изображений, сохраненных в постоянном хранилище
+        public ObservableCollection<Image> ImagesFromStorage { get; set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyChanged([CallerMemberName] string prop = "")
@@ -110,18 +166,30 @@ namespace WpfApp1
 
         void FilesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         { OnPropertyChanged("Files"); }
+        void ImagesFromStorageCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        { OnPropertyChanged("ImagesFromStorage"); }
 
         public ViewModel()
         {
             FolderPath = "Folder path will be displayed here";
             Image1 = null;
             Image2 = null;
-            
+
             Files = new ObservableCollection<ListItem>();
+            ImagesFromStorage = new ObservableCollection<Image>();
+            using (var db = new DataBaseContext())
+            {
+                var query = db.Images;
+                foreach (var img in query)
+                    ImagesFromStorage.Add(img);
+            }
+
             Files.CollectionChanged += FilesCollectionChanged;
+            ImagesFromStorage.CollectionChanged += ImagesFromStorageCollectionChanged;
 
             ImagesChanged = true;
             Cancellable = false;
+            ImageSelected = false;
         }
     }
 
@@ -145,6 +213,34 @@ namespace WpfApp1
 
             Image1ListBox.SelectionChanged += Image1SelectionChanged;
             Image2ListBox.SelectionChanged += Image2SelectionChanged;
+            ImagesFromStorageListBox.SelectionChanged += ImageFromStorageSelectionChanged;
+        }
+
+        //.........................Индикаторы выбора элементов ListBox
+        private void Image1SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ViewModel.ImagesChanged = true;
+            int Index = Image1ListBox.SelectedIndex;
+            if (Index != -1)
+                ViewModel.Image1 = ViewModel.Files[Index].Path;
+        }
+        private void Image2SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ViewModel.ImagesChanged = true;
+            int Index = Image2ListBox.SelectedIndex;
+            if (Index != -1)
+                ViewModel.Image2 = ViewModel.Files[Index].Path;
+        }
+        private void ImageFromStorageSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            int Index = ImagesFromStorageListBox.SelectedIndex;
+            if (Index != -1)
+            {
+                ViewModel.ImageFromStorage = ViewModel.ImagesFromStorage[Index];
+                ViewModel.ImageSelected = true;
+            }
+            else
+                ViewModel.ImageSelected = false;
         }
 
         //.........................Поиск и открытие каталога с изображениями
@@ -174,20 +270,6 @@ namespace WpfApp1
                     ViewModel.Files.Add(listItem);
             }
         }
-        private void Image1SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            ViewModel.ImagesChanged = true;
-            int Index = Image1ListBox.SelectedIndex;
-            if(Index != -1)
-                ViewModel.Image1 = ViewModel.Files[Index].Path;
-            }
-        private void Image2SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            ViewModel.ImagesChanged = true;
-            int Index = Image2ListBox.SelectedIndex;
-            if (Index != -1)
-                ViewModel.Image2 = ViewModel.Files[Index].Path;
-        }
 
         //.........................Проверка выбора изображений
         private bool CheckSelectedImages()
@@ -215,64 +297,122 @@ namespace WpfApp1
             else return true;
         }
 
-        private List<Image<Rgb24>> GetEqualSizeImages(List<Image<Rgb24>> images)
+        //.........................Приведение выбранного изображения к необходимому размеру перед началом вычислений
+        private Image<Rgb24> GetValidSizeImage(Image<Rgb24> source_image)
         {
-            var equal_size_images = new List<Image<Rgb24>>();
-            
-            foreach (Image<Rgb24> image in images)
+            Image<Rgb24> valid_size_image = source_image;
+            var source_height = source_image.Height;
+            var source_width = source_image.Width;
+
+            if (source_height != source_width)
             {
-                var source_height = image.Height;
-                var source_width = image.Width;
-                if (source_height != source_width)
-                {
-                    var target_size = Math.Min(source_height, source_width);
-                    var clone = image.Clone(img => 
-                        img.Resize(source_width, source_height).Crop(new Rectangle((source_width - target_size)/2, 0, target_size, target_size)));
-                    equal_size_images.Add(clone);
-                }
-                else
-                    equal_size_images.Add(image);
+                var target_size = Math.Min(source_height, source_width);
+                valid_size_image = source_image.Clone(img =>
+                    img.Resize(source_width, source_height).Crop(new Rectangle((source_width - target_size) / 2, 0, target_size, target_size)));
+            }
+            valid_size_image.Mutate(img => img.Resize(112, 112));
+            return valid_size_image;
+        }
+
+        //.........................Конвертеры из float[] в byte[] и наоборот (для записи и использования векторов Embedding, сохраненных в хранилище)
+        private byte[] FloatToByte(float[] FloatArray)
+        {
+            byte[] ByteArray = new byte[FloatArray.Length * 4];
+            Buffer.BlockCopy(FloatArray, 0, ByteArray, 0, ByteArray.Length);
+            return ByteArray;
+        }
+        private float[] ByteToFloat(byte[] ByteArray)
+        {
+            float[] FloatArray = new float[ByteArray.Length / 4];
+            Buffer.BlockCopy(ByteArray, 0, FloatArray, 0, ByteArray.Length);
+            return FloatArray;
+        }
+
+        //.........................Получение вектора Embedding для выбранного изображения (либо из хранилища, либо путем анализа изображения)
+        private Task<float[]> GetEmbedding(string image_path)
+        {
+            Task<float[]> embedding_task;
+            Image image_from_storage = null;
+
+            // Проверка наличия изображения в хранилище
+            using (var db = new DataBaseContext())
+            {
+                string image_hash = Image.GetHash(image_path);
+                var q = db.Images.Where(x => x.Hash == image_hash);
+                if (q.Any())
+                    image_from_storage = q.First();
+            }
+            // Если изображение есть в хранилище:
+            if (image_from_storage != null)
+            {
+                Func<float[]> embedding = () => { return ByteToFloat(image_from_storage.Embedding); };
+                embedding_task = new Task<float[]>(embedding, TaskCreationOptions.LongRunning);
+                embedding_task = Task<float[]>.Run(embedding);
+            }
+            // Если изображения нет в хранилище:
+            else
+            {
+                var valid_size_face = GetValidSizeImage(SixLabors.ImageSharp.Image.Load<Rgb24>(image_path));
+                embedding_task = ArcFace_Functions.CreateEmbedding(valid_size_face);
             }
 
-            foreach (Image<Rgb24> image in equal_size_images)
-                image.Mutate(img => img.Resize(112, 112));
+            return embedding_task;
+        }
 
-            return equal_size_images;
+        private void AddToDataBase(Image img)
+        {
+            Image image_from_database = null;
+
+            // Проверка наличия изображения в хранилище
+            using (var db = new DataBaseContext())
+            {
+                string new_image_hash = Image.GetHash(img.Path);
+                var q = db.Images.Where(x => x.Hash == new_image_hash);
+                if (q.Any())
+                    image_from_database = q.First();
+
+                // Если изображения нет в хранилище:
+                if (image_from_database == null)
+                {
+                    db.Add(img);
+                    db.SaveChanges();
+
+                    ViewModel.ImagesFromStorage.Clear();
+                    var query = db.Images;
+                    foreach (var a in query)
+                        ViewModel.ImagesFromStorage.Add(a);
+                }
+            }
         }
 
         //.........................Вычисление расстояния и сходства для выбранных изображений
         private async void Start_Calculations_Click(object sender, RoutedEventArgs e)
         {
-            Image<Rgb24> face1;
-            Image<Rgb24> face2;
+            Task<float[]>[] image_embeddings = new Task<float[]>[2];
 
             ViewModel.Distance = 0;
             ViewModel.Similarity = 0;
             DistanceTokenKey = Guid.NewGuid().ToString();
             SimilarityTokenKey = Guid.NewGuid().ToString();
+            pbStatus.Value = 0;
 
             if (ViewModel.ImagesChanged && CheckSelectedImages())
             {
                 ViewModel.ImagesChanged = false;
                 ViewModel.Cancellable = true;
 
-                var equal_size_faces = GetEqualSizeImages(new List<Image<Rgb24>> {
-                    SixLabors.ImageSharp.Image.Load<Rgb24>(ViewModel.Image1),
-                    SixLabors.ImageSharp.Image.Load<Rgb24>(ViewModel.Image2)
-                });
-                face1 = equal_size_faces[0];
-                face2 = equal_size_faces[1];
-                pbStatus.Value = 20;
+                image_embeddings[0] = GetEmbedding(ViewModel.Image1);
+                pbStatus.Value += 10;
+                image_embeddings[1] = GetEmbedding(ViewModel.Image2);
+                pbStatus.Value += 10;
 
-                var distance = ArcFace_Functions.AsyncDistance(face1, face2, DistanceTokenKey);
-                var similarity = ArcFace_Functions.AsyncSimilarity(face1, face2, SimilarityTokenKey);
+                var distance = ArcFace_Functions.AsyncDistance(image_embeddings[0], image_embeddings[1], DistanceTokenKey);
+                var similarity = ArcFace_Functions.AsyncSimilarity(image_embeddings[0], image_embeddings[1], SimilarityTokenKey);
 
                 var ActiveTasks = new List<Task> { distance, similarity };
                 while (ActiveTasks.Count > 0)
                 {
-                    Sem.WaitAsync();
                     Task finished = await Task.WhenAny(ActiveTasks);
-                    Sem.Release();
 
                     if (finished.Status == TaskStatus.Canceled)
                     {
@@ -283,19 +423,39 @@ namespace WpfApp1
                         pbStatus.Value = 0;
                         System.Windows.MessageBox.Show("All calculations canceled!");
                     }
-                    else if (finished == distance)
-                    {
-                        if (finished.Status == TaskStatus.Canceled);
-                        ViewModel.Distance = distance.Result;
-                        pbStatus.Value += 40;
-                    }
-                    else if (finished == similarity)
-                    {
-                        ViewModel.Similarity = similarity.Result;
-                        pbStatus.Value += 40;
-                    }
                     else
-                        System.Windows.MessageBox.Show("How is this even possible?!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    {
+                        if (finished == distance)
+                        {
+                            if (finished.Status == TaskStatus.Canceled) ;
+                            ViewModel.Distance = distance.Result;
+                            pbStatus.Value += 40;
+                        }
+                        else if (finished == similarity)
+                        {
+                            ViewModel.Similarity = similarity.Result;
+                            pbStatus.Value += 40;
+                        }
+                        else
+                            System.Windows.MessageBox.Show("How is this even possible?!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        
+                        AddToDataBase(
+                            new Image
+                            {
+                                Name = System.IO.Path.GetFileName(ViewModel.Image1),
+                                Path = ViewModel.Image1,
+                                Hash = Image.GetHash(ViewModel.Image1),
+                                Embedding = FloatToByte(image_embeddings[0].Result)
+                            });
+                        AddToDataBase(
+                            new Image
+                            {
+                                Name = System.IO.Path.GetFileName(ViewModel.Image2),
+                                Path = ViewModel.Image2,
+                                Hash = Image.GetHash(ViewModel.Image2),
+                                Embedding = FloatToByte(image_embeddings[1].Result)
+                            });
+                    }
                     ActiveTasks.Remove(finished);
                 }
                 ViewModel.Cancellable = false;
@@ -307,6 +467,23 @@ namespace WpfApp1
         {
             ArcFace_Functions.Cancel(DistanceTokenKey);
             ArcFace_Functions.Cancel(SimilarityTokenKey);
+        }
+
+        //.........................Удаление выбранного изображения из хранилища
+        private async void Delete_Image_Click(object sender, RoutedEventArgs e)
+        {
+            await Sem.WaitAsync();
+            using (var db = new DataBaseContext())
+            {
+                db.Remove(db.Images.Single(img => img.Hash == ViewModel.ImageFromStorage.Hash));
+                db.SaveChanges();
+
+                ViewModel.ImagesFromStorage.Clear();
+                var query = db.Images;
+                foreach (var a in query)
+                    ViewModel.ImagesFromStorage.Add(a);
+            }
+            Sem.Release();
         }
     }
 

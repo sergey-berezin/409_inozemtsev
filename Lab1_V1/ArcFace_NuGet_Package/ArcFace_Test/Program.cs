@@ -274,8 +274,7 @@ class Test
 
     static async Task Main()
     {
-        LoadFaces("C:\\Users\\User\\Desktop\\prog\\C#\\Sem7\\ArcFace_NuGet_Package\\ArcFace_Test\\face1.png", 
-                  "C:\\Users\\User\\Desktop\\prog\\C#\\Sem7\\ArcFace_NuGet_Package\\ArcFace_Test\\face2.png");
+        LoadFaces("face1.png", "face2.png");
 
         Console.WriteLine("\n____________________SYNCHRONOUS SEPARATE OPERATIONS TEST START____________________\n");
         var sep_sync_results = SeparateSyncTest();
