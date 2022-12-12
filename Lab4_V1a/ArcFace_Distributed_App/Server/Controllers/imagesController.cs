@@ -6,13 +6,13 @@ namespace ServerClasses.Controllers
     [Route("[controller]")]
     public class imagesController : ControllerBase
     {
-        private DbInterface.DbFunctions Functions;
+        private ControllerFunctions Functions;
         private readonly ILogger<imagesController> _logger;
 
         public imagesController(ILogger<imagesController> logger)
         {
             this._logger = logger;
-            this.Functions = new DbInterface.DbFunctions();
+            this.Functions = new ControllerFunctions();
         }
 
         [HttpGet]

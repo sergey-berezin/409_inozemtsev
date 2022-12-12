@@ -21,7 +21,8 @@
             <MenuItem Header="Images Folder" Click="Browse_Folders_Click"/>
         </Menu>
         <Grid Height="750" Width="1000">
-            <TextBlock x:Name="FolderPathBlock" Text="{Binding Path=FolderPath, UpdateSourceTrigger=PropertyChanged}" Margin="50,50,50,680"/>
+            <TextBlock x:Name="ServerConnection" Margin="30,40,670,690"/>
+            <TextBlock x:Name="FolderPathBlock" Text="{Binding Path=FolderPath, UpdateSourceTrigger=PropertyChanged}" Margin="30,65,50,665"/>
             <TextBlock x:Name="DataBase" Text="Images from database:" Margin="30,110,820,620"/>
             <TextBlock x:Name="Img1" Text="First image:" Margin="205,110,645,620"/>
             <TextBlock x:Name="Img2" Text="Second image:" Margin="380,110,470,620"/>

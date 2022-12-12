@@ -13,6 +13,8 @@ using System.Windows.Controls;
 using System.Runtime.CompilerServices;
 using System.Net.Http;
 using Newtonsoft.Json;
+using Polly;
+using Polly.Retry;
 
 using NuGet_ArcFace_Functions;
 using Database;
@@ -149,7 +151,11 @@ namespace WpfApp1
     //________________________________________________________ГЛАВНОЕ ОКНО ПРИЛОЖЕНИЯ_________________________________________________________
     public partial class MainWindow : Window
     {
-        private Uri ServerLink;                         // Ссылка на сервер
+        private readonly bool network_required = false;
+        private readonly Uri ServerLink;
+        private readonly AsyncRetryPolicy policy;
+
+        private bool cancellation = false;
         private CancellationTokenSource source;
         private string DistanceTokenKey;                // Токен для отмены вычисления расстояния
         private string SimilarityTokenKey;              // Токен для отмены вычисления сходства
@@ -161,8 +167,12 @@ namespace WpfApp1
         {
             ServerLink = new Uri("https://localhost:7240/images");
             source = new CancellationTokenSource();
-            ArcFace_Functions = new Functions();
+            ArcFace_Functions = new Functions(network_required);
             ViewModel = new ViewModel();
+
+            policy = Policy.Handle<HttpRequestException>().WaitAndRetryAsync(
+                3,
+                times => TimeSpan.FromMilliseconds(times*10000));
 
             InitializeComponent();
             this.DataContext = ViewModel;
@@ -181,43 +191,48 @@ namespace WpfApp1
                 ImagesListBoxStatus.Text = "Loading images...";
                 var ImagesFromServer = new ObservableCollection<Database.Image>();
 
-                var Client = new HttpClient();
-                var response = await Client.GetAsync(ServerLink, source.Token);
-                if (response.IsSuccessStatusCode)
+                ServerConnection.Text = "Establishing connection to the server...";
+                await policy.ExecuteAsync(async () =>
                 {
-                    // Получаем массив идентификаторов изображений в хранилище
-                    var ids_string = response.Content.ReadAsStringAsync().Result;
-                    var ids = JsonConvert.DeserializeObject<int[]>(ids_string);
+                    var Client = new HttpClient();
+                    var response = await Client.GetAsync(ServerLink, source.Token);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        // Получаем массив идентификаторов изображений в хранилище
+                        var ids_string = response.Content.ReadAsStringAsync().Result;
+                        var ids = JsonConvert.DeserializeObject<int[]>(ids_string);
 
-                    // Если изображений нет (начальное состояние базы данных)
-                    if (ids.Length == 0)
-                    {
-                        ViewModel.Images.Clear();
-                        ViewModel.StorageNotEmpty = false;
-                    }
-                    // Если в хранилище присутствуют изображения
-                    else
-                    {
-                        foreach (var id in ids)
+                        // Если изображений нет (начальное состояние базы данных)
+                        if (ids.Length == 0)
                         {
-                            // Находим в базе данных каждое изображение по его идентификатору
-                            string ID_Link = ServerLink + "/id?id=" + id.ToString();
-                            var img_response = await Client.GetAsync(ID_Link, source.Token);
-                            
-                            var image_string = img_response.Content.ReadAsStringAsync().Result;
-                            var image = JsonConvert.DeserializeObject<Database.Image>(image_string);
-                            ImagesFromServer.Add(image);
+                            ViewModel.Images.Clear();
+                            ViewModel.StorageNotEmpty = false;
                         }
-                        ViewModel.Images.Clear();
-                        foreach (var image in ImagesFromServer)
-                            ViewModel.Images.Add(image);
+                        // Если в хранилище присутствуют изображения
+                        else
+                        {
+                            foreach (var id in ids)
+                            {
+                                // Находим в базе данных каждое изображение по его идентификатору
+                                string ID_Link = ServerLink + "/id?id=" + id.ToString();
+                                var img_response = await Client.GetAsync(ID_Link, source.Token);
 
-                        ViewModel.StorageNotEmpty = true;
+                                var image_string = img_response.Content.ReadAsStringAsync().Result;
+                                var image = JsonConvert.DeserializeObject<Database.Image>(image_string);
+                                ImagesFromServer.Add(image);
+                            }
+                            ViewModel.Images.Clear();
+                            foreach (var image in ImagesFromServer)
+                                ViewModel.Images.Add(image);
+
+                            ViewModel.StorageNotEmpty = true;
+                        }
+                        ServerConnection.Text = "Connection established!";
+                        ImagesListBoxStatus.Text = final_text;
                     }
-                    ImagesListBoxStatus.Text = final_text;
-                }
-                else
-                { ImagesListBoxStatus.Text = "Error in loading images!"; }
+                    else
+                    { ImagesListBoxStatus.Text = "Error in loading images!"; }
+                });
             }
             catch(HttpRequestException)
             { System.Windows.MessageBox.Show("Failed to connect to the server:\n" + ServerLink, "Http Request Exception", MessageBoxButton.OK, MessageBoxImage.Error); }
@@ -273,10 +288,16 @@ namespace WpfApp1
             string PostLink = ServerLink + "?image_path=" + Uri.EscapeDataString(image_path);
             try
             {
-                var Client = new HttpClient();
-                var response = await Client.PostAsync(PostLink, new StringContent(image_path), source.Token);
-                var id_string = await response.Content.ReadAsStringAsync();
-                return Int32.Parse(id_string);
+                ServerConnection.Text = "Establishing connection to the server...";
+                return await policy.ExecuteAsync(async () =>
+                {
+                    ServerConnection.Text = "Connection established!";
+
+                    var Client = new HttpClient();
+                    var response = await Client.PostAsync(PostLink, new StringContent(image_path), source.Token);
+                    var id_string = await response.Content.ReadAsStringAsync();
+                    return Int32.Parse(id_string);
+                });
             }
             catch (HttpRequestException)
             {
@@ -291,16 +312,22 @@ namespace WpfApp1
             string ID_Link = ServerLink + "/id?id=" + id.ToString();
             try
             {
-                var Client = new HttpClient();
-                var response = await Client.GetAsync(ID_Link);
-                var json_string = await response.Content.ReadAsStringAsync();
-                var image = JsonConvert.DeserializeObject<Database.Image>(json_string);
+                ServerConnection.Text = "Establishing connection to the server...";
+                return await policy.ExecuteAsync(async () =>
+                {
+                    ServerConnection.Text = "Connection established!";
 
-                Func<float[]> embedding = () => { return Converters.ByteToFloat(image.Embedding); };
-                var embedding_task = new Task<float[]>(embedding, TaskCreationOptions.LongRunning);
-                embedding_task = Task<float[]>.Run(embedding);
+                    var Client = new HttpClient();
+                    var response = await Client.GetAsync(ID_Link);
+                    var json_string = await response.Content.ReadAsStringAsync();
+                    var image = JsonConvert.DeserializeObject<Database.Image>(json_string);
 
-                return embedding_task;
+                    Func<float[]> embedding = () => { return Converters.ByteToFloat(image.Embedding); };
+                    var embedding_task = new Task<float[]>(embedding, TaskCreationOptions.LongRunning);
+                    embedding_task = Task<float[]>.Run(embedding);
+
+                    return embedding_task;
+                });
             }
             catch (HttpRequestException)
             {
@@ -314,9 +341,15 @@ namespace WpfApp1
         {
             try
             {
-                var Client = new HttpClient();
-                var response = await Client.DeleteAsync(ServerLink, source.Token);
-                var result = await response.Content.ReadAsStringAsync();
+                ServerConnection.Text = "Establishing connection to the server...";
+                await policy.ExecuteAsync(async () =>
+                {
+                    ServerConnection.Text = "Connection established!";
+
+                    var Client = new HttpClient();
+                    var response = await Client.DeleteAsync(ServerLink, source.Token);
+                    var result = await response.Content.ReadAsStringAsync();
+                });
             }
             catch (HttpRequestException)
             { System.Windows.MessageBox.Show("Failed to connect to the server:\n" + ServerLink, "Http Request Exception", MessageBoxButton.OK, MessageBoxImage.Error); }
@@ -376,6 +409,16 @@ namespace WpfApp1
                 // Достаем вычисленные векторы Embedding для выбранных изображений из хранилища и переводим их в Task<float[]>
                 var embedding_task_1 = await GetEmbeddingTask(ID1);
                 var embedding_task_2 = await GetEmbeddingTask(ID2);
+                if (cancellation)
+                {
+                    ViewModel.Distance = -1;
+                    ViewModel.Similarity = -1;
+                    ViewModel.ImagesChanged = true;
+                    pbStatus.Value = 0;
+                    ViewModel.Cancellable = false;
+                    System.Windows.MessageBox.Show("All calculations canceled!");
+                    return;
+                }
                 pbStatus.Value += 10;
 
                 // Запускаем асинхронные вычисления расстояния и сходства
@@ -422,6 +465,7 @@ namespace WpfApp1
         //.........................Отмена вычислений для выбранных изображений
         private async void Cancel_Calculations_Click(object sender, RoutedEventArgs e)
         {
+            cancellation = true;
             ArcFace_Functions.Cancel(DistanceTokenKey);
             ArcFace_Functions.Cancel(SimilarityTokenKey);
         }
