@@ -1,0 +1,52 @@
+﻿<Window x:Class="WpfApp1.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WpfApp1"
+        mc:Ignorable="d"
+        Title="ArcFace App" Height="750" Width="1000">
+    <Window.Resources>
+        <local:DistanceConverter x:Key="DisConv"/>
+        <local:SimilarityConverter x:Key="SimConv"/>
+        <local:ImageConverter x:Key="ByteToImageConv"/>
+        <DataTemplate x:Key="DatabaseListTemplate">
+            <StackPanel>
+                <Image Source="{Binding Data, Converter={StaticResource ByteToImageConv}}" Width="130"/>
+                <TextBlock Text="{Binding Path=Name}" Width ="130" TextWrapping="Wrap"/>
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="ListTemplate">
+            <StackPanel>
+                <Image Source="{Binding Path}" Width="130"/>
+                <TextBlock Text="{Binding Path=Name}" Width ="130" TextWrapping="Wrap"/>
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
+    <StackPanel>
+        <Menu Height="20">
+            <MenuItem Header="Images Folder" Click="Browse_Folders_Click"/>
+        </Menu>
+        <Grid Height="750" Width="1000">
+            <TextBlock x:Name="ServerConnection" Margin="30,40,670,690"/>
+            <TextBlock x:Name="FolderPathBlock" Text="{Binding Path=FolderPath, UpdateSourceTrigger=PropertyChanged}" Margin="30,65,50,665"/>
+            <TextBlock x:Name="DataBase" Text="Images from database:" Margin="30,110,820,620"/>
+            <TextBlock x:Name="Img1" Text="First image:" Margin="205,110,645,620"/>
+            <TextBlock x:Name="Img2" Text="Second image:" Margin="380,110,470,620"/>
+            <ListBox x:Name="ImagesFromStorageListBox" ItemsSource="{Binding Images, UpdateSourceTrigger=PropertyChanged}" ItemTemplate="{StaticResource DatabaseListTemplate}" Margin="30,130,820,140"/>
+            <ListBox x:Name="Image1ListBox" ItemsSource="{Binding Files, UpdateSourceTrigger=PropertyChanged}" ItemTemplate="{StaticResource ListTemplate}" Margin="205,130,645,140"/>
+            <ListBox x:Name="Image2ListBox" ItemsSource="{Binding Files, UpdateSourceTrigger=PropertyChanged}" ItemTemplate="{StaticResource ListTemplate}" Margin="380,130,470,140"/>
+            <TextBlock x:Name="ImagesListBoxStatus" Margin="30,615,820,115"/>
+            <Button x:Name="DeleteImage" Click="Delete_Images_Click" IsEnabled="{Binding StorageNotEmpty}" Margin="30,640,820,85">Delete All Images</Button>
+            <TextBlock x:Name="Face1" Text="First image:" FontWeight="Black" Margin="555,110,295,620"/>
+            <TextBlock x:Name="Face2" Text="Second image:" FontWeight="Black" Margin="825,110,25,620"/>
+            <Image x:Name="Face1Img" Source="{Binding Image1, UpdateSourceTrigger=PropertyChanged}" Height ="auto" Width="auto" Margin="555,130,295,470"/>
+            <Image x:Name="Face2Img" Source="{Binding Image2, UpdateSourceTrigger=PropertyChanged}" Height ="auto" Width="auto" Margin="825,130,25,470"/>
+            <Button x:Name="StartCalc" Foreground="Blue" IsEnabled="{Binding ImagesChanged}" Click="Start_Calculations_Click" Margin="555,380,25,350">Start Calculations</Button>
+            <ProgressBar x:Name="pbStatus" Minimum="0" Maximum="100" Margin="555,400,25,330"/>
+            <Button x:Name="CancelCalc" Foreground="Red" IsEnabled="{Binding Cancellable}" Click="Cancel_Calculations_Click" Margin="555,420,25,310">Cancel Calculations</Button>
+            <TextBlock x:Name="Dis" Text="{Binding Distance, Converter={StaticResource DisConv}, UpdateSourceTrigger=PropertyChanged}" Margin="555,450,320,280"/>
+            <TextBlock x:Name="Sim" Text="{Binding Similarity, Converter={StaticResource SimConv}, UpdateSourceTrigger=PropertyChanged}" Margin="555,470,320,260"/>
+        </Grid>
+    </StackPanel>
+</Window>
