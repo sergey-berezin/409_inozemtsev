@@ -2,7 +2,6 @@
 using Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,11 +9,9 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DatabaseClassLib.Migrations
 {
     [DbContext(typeof(Context))]
-    [Migration("20221209083849_InitialCreate")]
-    partial class InitialCreate
+    partial class ContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.0");
@@ -25,6 +22,10 @@ namespace DatabaseClassLib.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
                     b.Property<byte[]>("Embedding")
                         .IsRequired()
                         .HasColumnType("BLOB");
@@ -34,10 +35,6 @@ namespace DatabaseClassLib.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Path")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

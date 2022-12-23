@@ -17,7 +17,7 @@ namespace DatabaseClassLib.Migrations
                     ID = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Path = table.Column<string>(type: "TEXT", nullable: false),
+                    Data = table.Column<byte[]>(type: "BLOB", nullable: false),
                     Hash = table.Column<string>(type: "TEXT", nullable: false),
                     Embedding = table.Column<byte[]>(type: "BLOB", nullable: false)
                 },

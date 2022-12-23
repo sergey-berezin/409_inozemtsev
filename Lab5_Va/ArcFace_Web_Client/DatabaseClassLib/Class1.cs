@@ -61,6 +61,6 @@ namespace Database
     public class PostData
     {
         public string Name { get; set; }
-        public byte[] Data { get; set; }
+        public string Base64String { get; set; }
     }
 }

@@ -173,7 +173,7 @@ namespace ServerClasses
         //.........................POST: Вычисление вектора Embedding изображения и добавление его в хранилище
         public async Task<(bool, int)> PostImage(PostData data, CancellationToken token)
         {
-            var ID = await GetEmbedding(data.Name, data.Data);
+            var ID = await GetEmbedding(data.Name, Convert.FromBase64String(data.Base64String));//data.Data);
             if (token.IsCancellationRequested)
                 return (false, -1);
             return (true, ID);

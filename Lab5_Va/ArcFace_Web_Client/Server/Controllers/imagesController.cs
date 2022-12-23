@@ -44,7 +44,7 @@ namespace ServerClasses.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<int>> Post(PostData data, CancellationToken token)
+        public async Task<ActionResult<int>> Post([FromBody]PostData data, CancellationToken token)
         {
             (bool res, int id) = await Functions.PostImage(data, token);
             if (res)

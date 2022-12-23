@@ -289,7 +289,7 @@ namespace WpfApp1
                 var image = new PostData
                 {
                     Name = System.IO.Path.GetFileName(image_path),
-                    Data = image_data
+                    Base64String = Convert.ToBase64String(image_data)
                 };
 
                 return await policy.ExecuteAsync(async () =>
@@ -300,7 +300,7 @@ namespace WpfApp1
                     Client.BaseAddress = ServerLink;
                     Client.DefaultRequestHeaders.Accept.Clear();
                     Client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-
+                    
                     var response = await HttpClientJsonExtensions.PostAsJsonAsync(Client, "images", image, source.Token);
                     var id = await response.Content.ReadFromJsonAsync<int>();
                     return id;
